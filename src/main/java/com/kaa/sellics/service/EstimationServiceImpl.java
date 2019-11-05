@@ -1,6 +1,8 @@
 package com.kaa.sellics.service;
 
+import com.kaa.sellics.model.EstimationRequest;
 import com.kaa.sellics.model.EstimationResult;
+import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.json.JsonParser;
@@ -21,31 +23,36 @@ import java.util.stream.Collectors;
 public class EstimationServiceImpl implements EstimationService{
 
     private static final Logger logger = LoggerFactory.getLogger(EstimationServiceImpl.class);
-    private RestTemplate restTemplate;
 
     private static final String AMAZON_COMPLETION_URL = "https://completion.amazon.com/search/complete";
+    private RestTemplate restTemplate;
 
     public EstimationServiceImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
     @Override
-    public EstimationResult estimate(String keyword) {
-        if(keyword == null) {
+    public EstimationResult estimate(EstimationRequest request) {
+        if(request.getKeyword() == null) {
             throw new IllegalArgumentException("Keyword could not be null.");
         }
-        keyword = keyword.trim();
+        String keyword = request.getKeyword().trim();
         if(keyword.length() == 0) {
             throw new IllegalArgumentException("Keyword could not be empty.");
         }
-        return new EstimationResult(keyword, doEstimate(keyword));
+        return new EstimationResult(keyword, doEstimate(request));
     }
 
-    private int doEstimate(String keyword) {
+    private int doEstimate(EstimationRequest request) {
+        String keyword = request.getKeyword();
+        StopWatch timer = request.getTimer();
         int result = 0;
-        int left = 0, right = keyword.length() - 1;
+        int left = 0, right = keyword.length() - 1, counter = 0;
         while(left <= right) {
-            int middle = left + (right - 1) / 2;
+            if( counter > 0 && (timer.getTime() + (timer.getTime() / counter) >= 10_000) ) {
+                return result;
+            }
+            int middle = left + (right - left) / 2;
             String subString = keyword.substring(0, middle + 1);
             if(getCompletions(subString).contains(keyword)) {
                 result = ((keyword.length() - middle) * 100) / keyword.length();
@@ -53,6 +60,7 @@ public class EstimationServiceImpl implements EstimationService{
             } else {
                 left = middle + 1;
             }
+            counter++;
         }
         return result;
     }
@@ -63,7 +71,7 @@ public class EstimationServiceImpl implements EstimationService{
                 String.class
         );
         String json = responseEntity.getBody();
-        JsonParser parser  = JsonParserFactory.getJsonParser();
+        JsonParser parser = JsonParserFactory.getJsonParser();
         List<Object> objects = parser.parseList(json);
         return ((ArrayList<Object>)objects.get(1))
                 .stream()
