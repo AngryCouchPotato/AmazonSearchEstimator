@@ -65,12 +65,15 @@ public class EstimationServiceImpl implements EstimationService{
         return result;
     }
 
-    private Set<String> getCompletions(String word) {
+    Set<String> getCompletions(String word) {
         ResponseEntity<String> responseEntity = restTemplate.getForEntity(
                 buildUri(word),
                 String.class
         );
-        String json = responseEntity.getBody();
+        return parse(responseEntity.getBody());
+    }
+
+    Set<String> parse(String json) {
         JsonParser parser = JsonParserFactory.getJsonParser();
         List<Object> objects = parser.parseList(json);
         return ((ArrayList<Object>)objects.get(1))
