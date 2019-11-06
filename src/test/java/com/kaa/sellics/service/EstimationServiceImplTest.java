@@ -40,7 +40,7 @@ public class EstimationServiceImplTest {
   }
 
   @Test
-  public void estimate_PopularKeywordGiven_ShouldEstimateScore100() {
+  public void estimate_VeryPopularKeywordGiven_ShouldEstimateScore100() {
     // Given
     String keyword = "iphone charger";
     EstimationRequest request = new EstimationRequest(keyword, new StopWatch());
@@ -55,6 +55,24 @@ public class EstimationServiceImplTest {
     assertNotNull(result);
     assertEquals(100, result.getScore());
     verify(estimationService, times(3)).getCompletions(any());
+  }
+
+  @Test
+  public void estimate_MiddlePopularKeywordGiven_ShouldEstimateScore78() {
+    // Given
+    String keyword = "iphone charger";
+    EstimationRequest request = new EstimationRequest(keyword, new StopWatch());
+    EstimationServiceImpl estimationService = Mockito.mock(EstimationServiceImpl.class);
+    when(estimationService.estimate(request)).thenCallRealMethod();
+    when(estimationService.getCompletions("iphone ")).thenReturn(getSetOfValues());
+
+    // When
+    EstimationResult result = estimationService.estimate(request);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(57, result.getScore());
+    verify(estimationService, times(4)).getCompletions(any());
   }
 
   @Test

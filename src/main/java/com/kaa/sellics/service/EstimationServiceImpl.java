@@ -49,7 +49,7 @@ public class EstimationServiceImpl implements EstimationService{
         int result = 0;
         int left = 0, right = keyword.length() - 1, counter = 0;
         while(left <= right) {
-            if( counter > 0 && (timer.getTime() + (timer.getTime() / counter) >= 10_000) ) {
+            if( counter > 0 && (timer.getTime() + ((double)timer.getTime() / counter) >= 10_000.00) ) {
                 return result;
             }
             int middle = left + (right - left) / 2;
